@@ -1,7 +1,0 @@
-D:\src\PicMan\bin\Debug\PicMan.exe.config
-D:\src\PicMan\bin\Debug\PicMan.exe
-D:\src\PicMan\bin\Debug\PicMan.pdb
-D:\src\PicMan\obj\Debug\PicMan.csprojAssemblyReference.cache
-D:\src\PicMan\obj\Debug\PicMan.csproj.CoreCompileInputs.cache
-D:\src\PicMan\obj\Debug\PicMan.exe
-D:\src\PicMan\obj\Debug\PicMan.pdb
