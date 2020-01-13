@@ -1,20 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+using System.Drawing.Imaging;
+using System.Drawing;
 
 namespace PicMan
 {
     class Program
     {
+        static bool shouldOverwite = false;
+        static string outputStrFormat = "yyyy-MM";
+        private static Regex metadataRegex = new Regex(":");
+
         static void Main(string[] args)
         {
-            var rawSrcPath = @"D:\Raw\t";
-            var destRootPath = @"F:\Photos\";
-            var assortedRootPath = @"F:\Photos\Assorted\";
+            var rawSrcPath = @"D:\takeout-20200109T155133Z-001\Takeout";
+            var destRootPath = @"F:\Photos\Test\";
+            var assortedRootPath = @"F:\Photos\Test\Assorted\";
 
             GroupByYear(rawSrcPath, destRootPath, assortedRootPath);
         }
@@ -27,31 +31,38 @@ namespace PicMan
 
             foreach(var file in allFiles)
             {
-                var yrName = ParseYear(file);
-                if (yrName == string.Empty)
+                try
                 {
-                    Console.WriteLine($"Parse error : {file}");
-                    notParsedCount++;
-                    if (!Directory.Exists(assortedRootPath))
+                    var yrName = ParseYearFromFileName(file);
+                    if (yrName == string.Empty)
                     {
-                        Directory.CreateDirectory(assortedRootPath);
+                        Console.WriteLine($"Using filetime : {file}");
+                        yrName = GetFileCreationTime(file);
                     }
 
-                    var destFile = assortedRootPath + Path.GetFileName(file);
-                    Copy(file, destFile, overwrite: false);
-                }
-                else
-                {
-                    parsedCount++;
                     var yrPath = $"{destRootPath}\\{yrName}\\";
                     if (!Directory.Exists(yrPath))
                     {
                         Directory.CreateDirectory(yrPath);
                     }
 
+                    parsedCount++;
                     var destFile = yrPath + Path.GetFileName(file);
-                    Copy(file, destFile, overwrite: false);
+                    Copy(file, destFile, shouldOverwite);
                 }
+                catch(Exception ex)
+                {
+                    notParsedCount++;
+                    Console.WriteLine($"Parse error : {file} {ex.Message}");
+                    if (!Directory.Exists(assortedRootPath))
+                    {
+                        Directory.CreateDirectory(assortedRootPath);
+                    }
+
+                    var destFile = assortedRootPath + Path.GetFileName(file);
+                    Copy(file, destFile, shouldOverwite);
+                }
+
             }
 
             Console.WriteLine($"Success : {parsedCount}, Failed : {notParsedCount}");
@@ -59,9 +70,9 @@ namespace PicMan
 
         private static void Copy(string srcFile, string destFile, bool overwrite)
         {
-            if (!File.Exists(destFile) || overwrite) // Dont overwrite
+            if (!File.Exists(destFile) || overwrite) 
             {
-                File.Copy(srcFile, destFile);
+                File.Copy(srcFile, destFile, overwrite); 
                 Console.WriteLine($"Copied : {srcFile} -> {destFile}");
             }
             else
@@ -70,14 +81,36 @@ namespace PicMan
             }
         }
 
+        private static string GetFileCreationTime(string file)
+        {
+            using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
+            using (Image myImage = Image.FromStream(fs, false, false))
+            {
+                PropertyItem propItem = myImage.GetPropertyItem(36867);
+                string dateTaken = metadataRegex.Replace(Encoding.UTF8.GetString(propItem.Value), "-", 2);
+                var parsed = DateTime.Parse(dateTaken);
+                return parsed.ToString(outputStrFormat);
+            }
+        }
 
-        private static string ParseYear(string file)
+        private static string ParseYearFromFileName(string file)
         {
             var name = Path.GetFileNameWithoutExtension(file);
 
             if (name.Split('_')[0].Length == 8)
             {
+                // 20180310_211720
                 name = name.Split('_')[0];
+            }
+            if (name.Split('_')[0] == "IMG")
+            {
+                // IMG_20180808_063039
+                name = name.Split('_')[1];
+            }
+            if (name.Split('-')[0] == "IMG")
+            {
+                // IMG-20191130-WA0025
+                name = name.Split('-')[1];
             }
             if (name.Split(' ')[0].Length == 10)
             {
@@ -87,7 +120,7 @@ namespace PicMan
             var parsed = DateTime.TryParseExact(name, new string[] { "yyyyMMdd", "yyyy-MM-dd" }, new CultureInfo("en-US"), DateTimeStyles.None, out DateTime dt);
             if (parsed)
             {
-                return dt.ToString("yyyy-MM");
+                return dt.ToString(outputStrFormat);
             }
             else
             {
