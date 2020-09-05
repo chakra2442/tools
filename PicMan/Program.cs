@@ -16,9 +16,9 @@ namespace PicMan
 
         static void Main(string[] args)
         {
-            var rawSrcPath = @"D:\takeout-20200109T155133Z-001\Takeout";
-            var destRootPath = @"F:\Photos\Test\";
-            var assortedRootPath = @"F:\Photos\Test\Assorted\";
+            var rawSrcPath = @"D:\sftp\Vic_DCIM\";
+            var destRootPath = @"F:\Photos";
+            var assortedRootPath = @"F:\Photos\Assorted\";
 
             GroupByYear(rawSrcPath, destRootPath, assortedRootPath);
         }
@@ -102,12 +102,13 @@ namespace PicMan
                 // 20180310_211720
                 name = name.Split('_')[0];
             }
-            if (name.Split('_')[0] == "IMG")
+            if (name.Split('_')[0] == "IMG" || name.Split('_')[0] == "VID")
             {
                 // IMG_20180808_063039
+                // VID_20191202_155556
                 name = name.Split('_')[1];
             }
-            if (name.Split('-')[0] == "IMG")
+            if (name.Split('-')[0] == "IMG" || name.Split('-')[0] == "VID")
             {
                 // IMG-20191130-WA0025
                 name = name.Split('-')[1];
