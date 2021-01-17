@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -16,9 +16,9 @@ namespace PicMan
 
         static void Main(string[] args)
         {
-            var rawSrcPath = @"D:\sftp\Vic_DCIM\";
-            var destRootPath = @"F:\Photos";
-            var assortedRootPath = @"F:\Photos\Assorted\";
+            var rawSrcPath = @"D:\Personal\picsbkup\sftp\test";
+            var destRootPath = @"D:\Personal\picsbkup\sftp\test\op";
+            var assortedRootPath = @"D:\Personal\picsbkup\sftp\test\assorted\";
 
             GroupByYear(rawSrcPath, destRootPath, assortedRootPath);
         }
@@ -83,14 +83,27 @@ namespace PicMan
 
         private static string GetFileCreationTime(string file)
         {
+            var creationTime = string.Empty;
             using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
-            using (Image myImage = Image.FromStream(fs, false, false))
             {
-                PropertyItem propItem = myImage.GetPropertyItem(36867);
-                string dateTaken = metadataRegex.Replace(Encoding.UTF8.GetString(propItem.Value), "-", 2);
-                var parsed = DateTime.Parse(dateTaken);
-                return parsed.ToString(outputStrFormat);
+                try
+                {
+                    using (Image myImage = Image.FromStream(fs, false, false))
+                    {
+                        PropertyItem propItem = myImage.GetPropertyItem(36867);
+                        string dateTaken = metadataRegex.Replace(Encoding.UTF8.GetString(propItem.Value), "-", 2);
+                        var parsed = DateTime.Parse(dateTaken);
+                        creationTime = parsed.ToString(outputStrFormat);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    var fallbackCreateTime = File.GetCreationTime(file);
+                    creationTime = fallbackCreateTime.ToString(outputStrFormat);
+                }
             }
+
+            return creationTime;
         }
 
         private static string ParseYearFromFileName(string file)
